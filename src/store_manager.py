@@ -10,6 +10,6 @@ load_dotenv()
 
 if __name__ == '__main__':
     print("===== LE MAGASIN DU COIN =====")
-    #main_menu = UserView()
-    main_menu = ProductView()
+    main_menu = UserView()
+    #main_menu = ProductView()
     main_menu.show_options()
