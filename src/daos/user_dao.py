@@ -11,9 +11,7 @@ from models.user import User
 class UserDAO:
     def __init__(self):
         try:
-            env_path = "../.env"
-            print(os.path.abspath(env_path))
-            load_dotenv(dotenv_path=env_path)
+            load_dotenv()
             db_host = os.getenv("MYSQL_HOST")
             db_name = os.getenv("MYSQL_DB_NAME")
             db_user = os.getenv("DB_USERNAME")
@@ -42,15 +40,21 @@ class UserDAO:
 
     def update(self, user):
         """ Update given user in MySQL """
-        pass
+        sql = "UPDATE users SET name=%s, email=%s WHERE id=%s"
+        self.cursor.execute(sql, (user.name, user.email, user.id))
+        self.conn.commit()
 
     def delete(self, user_id):
         """ Delete user from MySQL with given user ID """
-        pass
+        sql = "DELETE FROM users WHERE id=%s"
+        self.cursor.execute(sql, (user_id,))
+        self.conn.commit()
 
-    def delete_all(self): #optional
+    def delete_all(self):  # optional
         """ Empty users table in MySQL """
-        pass
+        sql = "DELETE FROM users"
+        self.cursor.execute(sql)
+        self.conn.commit()
         
     def close(self):
         self.cursor.close()

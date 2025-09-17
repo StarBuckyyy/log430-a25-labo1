@@ -21,3 +21,10 @@ class UserController:
     def shutdown(self):
         """ Close database connection """
         self.dao.close()
+    def delete_user(self, user_id):
+        """Supprime un utilisateur spécifique"""
+        self.dao.delete(user_id)
+
+    def delete_all_users(self):
+        """Supprime tous les utilisateurs"""
+        self.dao.delete_all()
