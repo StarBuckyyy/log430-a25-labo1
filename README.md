@@ -9,7 +9,7 @@ Auteur : Goran VALIDZIC
 
 2. **Lancer les conteneurs (app + bases de données)**
 
-docker-compose up
+docker-compose up -d
 
 3. **Lancer les tests**
 
