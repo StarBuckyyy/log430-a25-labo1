@@ -1,42 +1,59 @@
-name: LAB01 CI
+name: CI - Tests
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      # 1️⃣ Checkout du dépôt
+      - name: Checkout dépôt
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install Docker Compose
+      # 2️⃣ Installer Docker Compose
+      - name: Installer Docker Compose
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
 
-      - name: Build and start Docker containers
-        run: docker-compose up -d --build
+      # 3️⃣ Lancer les services MySQL et MongoDB
+      - name: Lancer les services
+        run: docker-compose up -d mysql mongo
 
-      - name: Wait for MySQL to be ready
+      # 4️⃣ Attendre que MySQL et MongoDB soient prêts
+      - name: Attendre que MySQL soit prêt
         run: |
-          echo "Waiting for MySQL to start..."
-          sleep 20  # donne le temps à MySQL de démarrer
+          echo "Waiting for MySQL..."
+          until docker exec mysql mysqladmin ping -uuser -ppass --silent; do
+            sleep 2
+          done
+      - name: Attendre que MongoDB soit prêt
+        run: |
+          echo "Waiting for MongoDB..."
+          until docker exec mongo mongo --eval "db.stats()" -u user -p pass --authenticationDatabase admin; do
+            sleep 2
+          done
 
-      - name: Initialize MySQL database
-        run: docker exec -i log430-a25-labo1-store_manager_app-1 python src/init_db.py
+      # 5️⃣ Construire le conteneur app
+      - name: Construire le conteneur app
+        run: docker-compose build store_manager_app
 
-      - name: Run tests
-        run: docker exec -i log430-a25-labo1-store_manager_app-1 pytest src/tests
+      # 6️⃣ Initialiser la base de données
+      - name: Initialiser MySQL
+        run: docker-compose run --rm store_manager_app python src/init_db.py
 
-      - name: Shutdown Docker containers
+      # 7️⃣ Installer les dépendances Python
+      - name: Installer les dépendances
+        run: |
+          docker-compose run --rm store_manager_app pip install --upgrade pip
+          docker-compose run --rm store_manager_app pip install -r requirements.txt
+          docker-compose run --rm store_manager_app pip install pytest
+
+      # 8️⃣ Lancer les tests
+      - name: Lancer tous les tests
+        run: docker-compose run --rm store_manager_app pytest src/tests
+
+      # 9️⃣ Nettoyer les conteneurs
+      - name: Nettoyer les conteneurs
         run: docker-compose down
