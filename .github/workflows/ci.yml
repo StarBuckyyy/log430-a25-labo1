@@ -57,3 +57,4 @@ jobs:
 
       - name: Lancer les tests
         run: pytest src/tests
+#changement pour test auto deploy
