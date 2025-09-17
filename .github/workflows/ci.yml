@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:8
@@ -54,25 +55,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
+          pip install pytest pymongo mysql-connector-python python-dotenv
 
-      - name: Wait for MySQL database
+      - name: Wait for MySQL
         run: |
-          echo "Waiting for MySQL database to be ready..."
+          echo "Waiting for MySQL to be ready..."
           for i in {1..30}; do
-            if mysql -hmysql -uuser -ppass -e "USE mydb;" &> /dev/null; then
-              echo "Database ready!"
+            if mysql -hmysql -uuser -ppass -e "SELECT 1;" &> /dev/null; then
+              echo "MySQL is ready!"
               break
             fi
-            echo "Database not ready yet, waiting..."
+            echo "MySQL not ready yet, waiting..."
             sleep 2
           done
 
       - name: Initialize MySQL database
         run: |
           echo "Initializing MySQL database..."
-          mysql -hmysql -uuser -ppass mydb < db-init/init.sql
-
+          mysql -hmysql -uuser -ppass -e "CREATE DATABASE IF NOT EXISTS mydb;"
+          mysql -hmysql -uuser -ppass mydb < ./db-init/init.sql
 
       - name: Run tests
         run: pytest src/tests
