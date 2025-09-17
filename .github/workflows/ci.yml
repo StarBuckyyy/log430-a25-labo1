@@ -55,6 +55,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest
+          pip install mysql-connector-python
+          pip install pymongo
 
       - name: Wait for MySQL database
         run: |
@@ -69,7 +71,18 @@ jobs:
           done
 
       - name: Initialize MySQL database
-        run: docker exec -i log430-a25-labo1-store_manager_app-1 python src/init_db.py || echo "Init script skipped (container not found)"
+        run: python src/init_db.py
+        env:
+          MYSQL_HOST: mysql
+          MYSQL_DB_NAME: mydb
+          DB_USERNAME: user
+          DB_PASSWORD: pass
 
       - name: Run tests
         run: pytest src/tests
+        env:
+          MYSQL_HOST: mysql
+          MYSQL_DB_NAME: mydb
+          DB_USERNAME: user
+          DB_PASSWORD: pass
+          MONGODB_HOST: mongo
