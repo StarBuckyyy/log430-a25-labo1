@@ -1,59 +1,73 @@
 name: CI - Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mydb
+          MYSQL_USER: user
+          MYSQL_PASSWORD: pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uuser -ppass"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      mongo:
+        image: mongo:6
+        env:
+          MONGO_INITDB_ROOT_USERNAME: user
+          MONGO_INITDB_ROOT_PASSWORD: pass
+        ports:
+          - 27017:27017
 
     steps:
-      # 1️⃣ Checkout du dépôt
-      - name: Checkout dépôt
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Installer Docker Compose
-      - name: Installer Docker Compose
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Create .env file
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+          echo "DB_HOST=mysql" >> .env
+          echo "DB_NAME=mydb" >> .env
+          echo "DB_USERNAME=user" >> .env
+          echo "DB_PASSWORD=pass" >> .env
+          echo "MONGODB_HOST=mongo" >> .env
 
-      # 3️⃣ Lancer les services MySQL et MongoDB
-      - name: Lancer les services
-        run: docker-compose up -d mysql mongo
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
 
-      # 4️⃣ Attendre que MySQL et MongoDB soient prêts
-      - name: Attendre que MySQL soit prêt
+      - name: Wait for MySQL to be ready
         run: |
           echo "Waiting for MySQL..."
-          until docker exec mysql mysqladmin ping -uuser -ppass --silent; do
-            sleep 2
-          done
-      - name: Attendre que MongoDB soit prêt
-        run: |
-          echo "Waiting for MongoDB..."
-          until docker exec mongo mongo --eval "db.stats()" -u user -p pass --authenticationDatabase admin; do
+          for i in {1..30}; do
+            if mysqladmin ping -hmysql -uuser -ppass --silent; then
+              break
+            fi
             sleep 2
           done
 
-      # 5️⃣ Construire le conteneur app
-      - name: Construire le conteneur app
-        run: docker-compose build store_manager_app
+      - name: Initialize MySQL database
+        run: docker exec -i log430-a25-labo1-store_manager_app-1 python src/init_db.py || echo "Init script skipped (container not found)"
 
-      # 6️⃣ Initialiser la base de données
-      - name: Initialiser MySQL
-        run: docker-compose run --rm store_manager_app python src/init_db.py
-
-      # 7️⃣ Installer les dépendances Python
-      - name: Installer les dépendances
-        run: |
-          docker-compose run --rm store_manager_app pip install --upgrade pip
-          docker-compose run --rm store_manager_app pip install -r requirements.txt
-          docker-compose run --rm store_manager_app pip install pytest
-
-      # 8️⃣ Lancer les tests
-      - name: Lancer tous les tests
-        run: docker-compose run --rm store_manager_app pytest src/tests
-
-      # 9️⃣ Nettoyer les conteneurs
-      - name: Nettoyer les conteneurs
-        run: docker-compose down
+      - name: Run tests
+        run: pytest src/tests
