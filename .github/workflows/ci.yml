@@ -68,10 +68,10 @@ jobs:
             sleep 2
           done
 
-      - - name: Initialize MySQL database
-          run: |
-            echo "Initializing MySQL database..."
-            mysql -hmysql -uuser -ppass mydb < db-init/init.sql
+      - name: Initialize MySQL database
+        run: |
+          echo "Initializing MySQL database..."
+          mysql -hmysql -uuser -ppass mydb < db-init/init.sql
 
 
       - name: Run tests
