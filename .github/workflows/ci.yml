@@ -34,7 +34,7 @@ jobs:
           pip install pytest mysql-connector-python pymongo python-dotenv
 
       - name: Initialize MySQL database
-        run: python /app/db-init/init.sql  # ou python src/init_db.py si tu as un script Python
+        run: python db-init/init.sql  # ou python src/init_db.py si tu as un script Python
 
       - name: Run tests
         run: pytest src/tests
