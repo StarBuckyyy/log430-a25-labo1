@@ -39,13 +39,11 @@ jobs:
         run: |
           echo "Waiting for MySQL..."
           for i in {1..30}; do
-            if mysql -hmysql -uuser -ppass -e "USE mydb;" &> /dev/null; then
-              echo "MySQL is ready"
-              break
-            fi
+            mysql -hmysql -uuser -ppass -e "SELECT 1;" &> /dev/null && break
             echo "MySQL not ready yet, waiting..."
             sleep 2
           done
+
 
 
       - name: Initialize MySQL database
