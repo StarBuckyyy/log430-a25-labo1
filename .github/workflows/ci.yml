@@ -39,16 +39,18 @@ jobs:
         run: |
           echo "Waiting for MySQL..."
           for i in {1..30}; do
-            mysql -hmysql -uuser -ppass -e "SELECT 1;" &> /dev/null && break
+            mysql -h127.0.0.1 -P3306 -uuser -ppass -e "SELECT 1;" &> /dev/null && break
             echo "MySQL not ready yet, waiting..."
             sleep 2
           done
 
 
 
+
       - name: Initialize MySQL database
         run: |
           echo "Initializing MySQL database..."
-          mysql -hmysql -uuser -ppass mydb < db-init/init.sql
+          mysql -h127.0.0.1 -P3306 -uuser -ppass mydb < db-init/init.sql
+
       - name: Run tests
         run: pytest src/tests
