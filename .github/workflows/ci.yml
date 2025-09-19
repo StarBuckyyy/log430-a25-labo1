@@ -13,8 +13,7 @@ jobs:
     steps:
       # Nettoyer les caches Python pour éviter les problèmes de permission
       - name: Clean repo
-        run: sudo rm -rf $GITHUB_WORKSPACE/__pycache__
-
+        run: sudo find $GITHUB_WORKSPACE -type d -name "__pycache__" -exec rm -rf {} +
       # Récupérer le code
       - name: Checkout repository
         uses: actions/checkout@v3
