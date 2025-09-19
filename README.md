@@ -44,3 +44,14 @@ from daos.user_dao import UserDAO doit être décommenté
 
 # Pour MongoDB
 from daos.user_dao_mongo import UserDAOMongo as UserDAO doit être décommenté (et from daos.user_dao import UserDAO doit être commenté)
+
+
+## ** CI/CD avec GitHub Actions**
+
+Le projet utilise un runner auto-hébergé sur la VM pour l’intégration continue et le déploiement :  
+
+- À chaque push sur `main`, le workflow `build-and-test` se déclenche automatiquement.
+- Le runner construit les conteneurs Docker (app + MySQL + MongoDB) et exécute tous les tests.
+- Les logs du workflow permettent de vérifier que MySQL et MongoDB sont bien initialisés et que les tests passent.
+
+Ainsi, le CI/CD est entièrement fonctionnel et testé.
