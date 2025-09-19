@@ -11,17 +11,21 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      # Nettoyer les caches Python pour éviter les problèmes de permission
       - name: Clean repo
         run: sudo rm -rf $GITHUB_WORKSPACE/__pycache__
 
+      # Récupérer le code
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Installer Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
+      # Créer le fichier .env
       - name: Create .env file
         run: |
           echo "MYSQL_HOST=mysql" > .env
@@ -30,14 +34,17 @@ jobs:
           echo "DB_PASSWORD=pass" >> .env
           echo "MONGODB_HOST=mongo" >> .env
 
+      # Installer les dépendances Python
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest mysql-connector-python pymongo python-dotenv
 
+      # Reset complet de l'environnement Docker et lancement des services
       - name: Start services with Docker Compose
         run: |
+          docker-compose down -v
           docker-compose up -d
           echo "Waiting for MySQL to be ready..."
           for i in {1..30}; do
@@ -49,10 +56,11 @@ jobs:
             sleep 2
           done
 
+      # Initialiser la base MySQL
       - name: Initialize MySQL database
         run: |
           docker exec $(docker ps -qf "name=mysql") sh -c "mysql -uuser -ppass mydb < /docker-entrypoint-initdb.d/init.sql"
 
+      # Lancer les tests Python
       - name: Run tests
         run: pytest src/tests
-        # modification pour run tests 
