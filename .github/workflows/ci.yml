@@ -8,47 +8,47 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      # 1️⃣ Récupérer le dépôt
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Installer Docker et Docker Compose
-      - name: Set up Docker
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Create .env file
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker.io docker-compose
+          echo "DB_HOST=mysql" > .env
+          echo "DB_NAME=mydb" >> .env
+          echo "DB_USERNAME=user" >> .env
+          echo "DB_PASSWORD=pass" >> .env
+          echo "MONGODB_HOST=mongo" >> .env
 
-      # 3️⃣ Lancer les services Docker Compose
-      - name: Build and start Docker services
-        run: docker-compose up -d --build
-
-      # 4️⃣ Attendre que MySQL soit prêt
-      - name: Wait for MySQL
-        run: |
-          echo "Waiting for MySQL..."
-          until docker exec $(docker-compose ps -q mysql) mysqladmin ping -h "localhost" --silent; do
-            sleep 2
-          done
-          echo "MySQL is ready!"
-
-      # 5️⃣ Exécuter le script d'initialisation de la base si nécessaire
-      - name: Initialize MySQL database
-        run: |
-          docker exec -i $(docker-compose ps -q mysql) sh -c "mysql -uuser -ppass mydb < /docker-entrypoint-initdb.d/init.sql"
-
-      # 6️⃣ Installer les dépendances Python dans le conteneur app
       - name: Install Python dependencies
         run: |
-          docker exec $(docker-compose ps -q store_manager_app) bash -c "python -m pip install --upgrade pip && pip install -r requirements.txt pytest mysql-connector-python pymongo python-dotenv"
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest mysql-connector-python pymongo python-dotenv
 
-      # 7️⃣ Lancer les tests dans le conteneur app
-      - name: Run tests
+      - name: Start services with Docker Compose
         run: |
-          docker exec $(docker-compose ps -q store_manager_app) pytest src/tests
+          docker-compose up -d
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..30}; do
+            if docker exec $(docker ps -qf "name=mysql") mysql -uuser -ppass -e "USE mydb;" &> /dev/null; then
+              echo "MySQL ready!"
+              break
+            fi
+            echo "MySQL not ready yet, waiting..."
+            sleep 2
+          done
 
-      # 8️⃣ Nettoyer les conteneurs après les tests
-      - name: Tear down Docker Compose
-        run: docker-compose down -v
+      - name: Initialize MySQL database
+        run: |
+          docker exec $(docker ps -qf "name=mysql") sh -c "mysql -uuser -ppass mydb < /docker-entrypoint-initdb.d/init.sql"
+
+      - name: Run tests
+        run: pytest src/tests
