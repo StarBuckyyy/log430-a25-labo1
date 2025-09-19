@@ -27,7 +27,7 @@ jobs:
       # Créer le fichier .env
       - name: Create .env file
         run: |
-          echo "MYSQL_HOST=mysql" > .env
+          echo "MYSQL_HOST=127.0.0.1" > .env
           echo "MYSQL_DB_NAME=mydb" >> .env
           echo "DB_USERNAME=user" >> .env
           echo "DB_PASSWORD=pass" >> .env
